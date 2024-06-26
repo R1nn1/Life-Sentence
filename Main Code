@@ -1,0 +1,419 @@
+local DrRayLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/AZYsGithub/DrRay-UI-Library/main/DrRay.lua"))()
+
+local window = DrRayLibrary:Load("Rinns Hub", "Default")
+
+local mainTab = DrRayLibrary.newTab("Main Tab", "ImageIdHere")
+
+-- This will be used to control the loops
+local autoAttack = false
+local autoStomp = false
+local autoFarm = false
+local autoTrainStrength = false
+
+mainTab.newToggle("Auto Attack", "Uses your fist to attack for you (works with any other weapon)", true, function(toggleState)
+    autoAttack = toggleState
+    if autoAttack then
+        print("On")
+        -- Start the auto attack loop in a separate thread
+        spawn(function()
+            while autoAttack do
+                local args = {
+                    [1] = "Swing"
+                }
+
+                game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("WeaponEvent"):FireServer(unpack(args))
+                
+                -- Wait for a short period to prevent spamming too quickly
+                wait(0.1)
+            end
+        end)
+    else
+        print("Off")
+    end
+end)
+
+mainTab.newToggle("Auto Stomp", "Automatically stomps for you", true, function(toggleState)
+    autoStomp = toggleState
+    if autoStomp then
+        print("Auto Stomp On")
+        -- Start the auto stomp loop in a separate thread
+        spawn(function()
+            while autoStomp do
+                local args = {
+                    [1] = "EPress"
+                }
+
+                game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("CarryStompEvent"):FireServer(unpack(args))
+                
+                -- Wait for a short period to prevent spamming too quickly
+                wait(0.1)
+            end
+        end)
+    else
+        print("Auto Stomp Off")
+    end
+end)
+
+mainTab.newToggle("Auto Farm", "Auto Farms Money for you for it to work go to the teleports tab and click teleport to coal mine then claim the job there then pull out your pickaxe", true, function(toggleState)
+    autoFarm = toggleState
+    if autoFarm then
+        print("Auto Farm On")
+        -- Start the auto farm loop in a separate thread
+        spawn(function()
+            -- Positions to teleport to and run the swing code
+            local positions = {
+                Vector3.new(814.2222290039062, 4.026865482330322, -154.76272583007812),
+                Vector3.new(826.1577758789062, 4.021044731140137, -171.03074645996094),
+                Vector3.new(838.9309692382812, 4.021045207977295, -170.04075622558594),
+                Vector3.new(831.59375, 4.021045684814453, -191.78782653808594),
+                Vector3.new(815.35009765625, 4.021045684814453, -190.7482452392578),
+                Vector3.new(836.7069091796875, 4.4162397384643555, -219.38841247558594),
+                Vector3.new(807.7904663085938, 4.021045207977295, -217.62315368652344),
+                Vector3.new(822.9920043945318, 4.855517387390137, -230.474365234375),
+                Vector3.new(838.6654663085938, 4.021045684814453, -242.0872344970703),
+                Vector3.new(811.8560180664062, 4.110861301422119, -245.36961364746094)
+            }
+
+            while autoFarm do
+                for _, pos in ipairs(positions) do
+                    if not autoFarm then break end
+
+                    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(pos)
+                    wait(2) -- Wait for 2 seconds
+
+                    local swingArgs = {
+                        [1] = "Swing"
+                    }
+
+                    game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("WeaponEvent"):FireServer(unpack(swingArgs))
+                    wait(0.1) -- Prevent spamming too quickly
+                end
+            end
+        end)
+    else
+        print("Auto Farm Off")
+    end
+end)
+
+mainTab.newToggle("Auto Train Strength", "Automatically trains strength for you have your fists out", true, function(toggleState)
+    autoTrainStrength = toggleState
+    if autoTrainStrength then
+        print("Auto Train Strength On")
+        -- Start the auto train strength loop in a separate thread
+        spawn(function()
+            while autoTrainStrength do
+                game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(1057.50390625, 5.067572593688965, 93.59724426269531)
+                wait(0.1) -- Allow time for teleport
+
+                local args = {
+                    [1] = "Swing"
+                }
+
+                game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("WeaponEvent"):FireServer(unpack(args))
+                wait(0.1) -- Prevent spamming too quickly
+            end
+        end)
+    else
+        print("Auto Train Strength Off")
+    end
+end)
+
+mainTab.newInput("Kill Player", "Enter players name (have your fists out)", function(text)
+    if text == "" then
+        print("No input provided.")
+        return
+    end
+
+    print("Entered text: " .. text)
+
+    local closestPlayer = nil
+    local closestDistance = math.huge
+
+    for _, player in ipairs(game.Players:GetPlayers()) do
+        if player.Name:lower():sub(1, #text) == text:lower() then
+            local distance = (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).magnitude
+            if distance < closestDistance then
+                closestDistance = distance
+                closestPlayer = player
+            end
+        end
+    end
+
+    if closestPlayer then
+        local character = game.Players.LocalPlayer.Character
+        local humanoid = character and character:FindFirstChild("Humanoid")
+        local playerDied = false
+        
+        humanoid.Died:Connect(function()
+            playerDied = true
+        end)
+        
+        spawn(function()
+            while closestPlayer and closestPlayer.Character and closestPlayer.Character:FindFirstChild("Humanoid") and closestPlayer.Character.Humanoid.Health > 1 do
+                if playerDied then break end
+
+                local positions = {
+                    closestPlayer.Character.HumanoidRootPart.Position + Vector3.new(2, 0, 0),
+                    closestPlayer.Character.HumanoidRootPart.Position + Vector3.new(-2, 0, 0),
+                    closestPlayer.Character.HumanoidRootPart.Position + Vector3.new(0, 0, 2),
+                    closestPlayer.Character.HumanoidRootPart.Position + Vector3.new(0, 0, -2),
+                }
+
+                for _, pos in ipairs(positions) do
+                    if playerDied then break end
+                    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(pos)
+                    wait(0.07)
+
+                    local args = {
+                        [1] = "Swing"
+                    }
+
+                    game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("WeaponEvent"):FireServer(unpack(args))
+                    
+                    -- Wait for a short period to prevent spamming too quickly
+                    wait(0.1)
+                end
+            end
+        end)
+    else
+        print("Player not found.")
+    end
+end)
+
+local espTab = DrRayLibrary.newTab("Esp Tab", "ImageIdHere")
+
+local boxEspEnabled = false
+local lineEspEnabled = false
+local highlightEspEnabled = false
+
+local function getTeamColor(player)
+    if player.Team then
+        return player.TeamColor.Color
+    else
+        return Color3.new(1, 1, 1)
+    end
+end
+
+espTab.newToggle("Box ESP", "Toggles Box ESP", true, function(toggleState)
+    boxEspEnabled = toggleState
+    if boxEspEnabled then
+        print("Box ESP On")
+        spawn(function()
+            while boxEspEnabled do
+                for _, player in ipairs(game.Players:GetPlayers()) do
+                    if player ~= game.Players.LocalPlayer and player.Character then
+                        -- Check if a box already exists for this player
+                        if not player.Character:FindFirstChild("BoxHandleAdornment") then
+                            local highlight = Instance.new("BoxHandleAdornment")
+                            highlight.Name = "BoxHandleAdornment"
+                            highlight.Adornee = player.Character
+                            highlight.Size = player.Character:GetExtentsSize()
+                            highlight.AlwaysOnTop = true
+                            highlight.ZIndex = 10
+                            highlight.Transparency = 0.6
+                            highlight.Color3 = getTeamColor(player)
+                            highlight.Parent = player.Character
+                        end
+                    end
+                end
+                wait(1)
+            end
+        end)
+    else
+        print("Box ESP Off")
+        -- Remove all Box ESP highlights
+        for _, player in ipairs(game.Players:GetPlayers()) do
+            if player.Character then
+                for _, adornment in ipairs(player.Character:GetChildren()) do
+                    if adornment:IsA("BoxHandleAdornment") and adornment.Name == "BoxHandleAdornment" then
+                        adornment:Destroy()
+                    end
+                end
+            end
+        end
+    end
+end)
+
+espTab.newToggle("Line ESP", "Toggles Line ESP", true, function(toggleState)
+    lineEspEnabled = toggleState
+    if lineEspEnabled then
+        print("Line ESP On")
+        spawn(function()
+            while lineEspEnabled do
+                for _, player in ipairs(game.Players:GetPlayers()) do
+                    if player ~= game.Players.LocalPlayer and player.Character then
+                        local character = player.Character
+                        local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+                        local localHumanoidRootPart = game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+
+                        if humanoidRootPart and localHumanoidRootPart then
+                            local screenPos, onScreen = game.Workspace.CurrentCamera:WorldToScreenPoint(humanoidRootPart.Position)
+                            local existingLine = localHumanoidRootPart:FindFirstChild("LineESP")
+                            if onScreen then
+                                if not existingLine then
+                                    local line = Instance.new("Beam")
+                                    line.Attachment0 = Instance.new("Attachment", localHumanoidRootPart)
+                                    line.Attachment1 = Instance.new("Attachment", humanoidRootPart)
+                                    line.Width0 = 0.05 -- Thinner line
+                                    line.Width1 = 0.05 -- Thinner line
+                                    line.Color = ColorSequence.new(getTeamColor(player))
+                                    line.Name = "LineESP"
+                                    line.Parent = localHumanoidRootPart
+                                end
+                            elseif existingLine then
+                                existingLine:Destroy()
+                            end
+                        end
+                    end
+                end
+                wait(1)
+            end
+        end)
+    else
+        print("Line ESP Off")
+        -- Remove all Line ESP beams
+        for _, player in ipairs(game.Players:GetPlayers()) do
+            if player.Character then
+                for _, beam in ipairs(player.Character:GetChildren()) do
+                    if beam:IsA("Beam") and beam.Name == "LineESP" then
+                        beam:Destroy()
+                    end
+                end
+            end
+        end
+    end
+end)
+
+espTab.newToggle("Highlight ESP", "Toggles Highlight ESP", true, function(toggleState)
+    highlightEspEnabled = toggleState
+    if highlightEspEnabled then
+        print("Highlight ESP On")
+        spawn(function()
+            while highlightEspEnabled do
+                for _, player in ipairs(game.Players:GetPlayers()) do
+                    if player ~= game.Players.LocalPlayer and player.Character then
+                        -- Check if a highlight already exists for this player
+                        if not player.Character:FindFirstChild("HighlightESP") then
+                            local highlight = Instance.new("Highlight")
+                            highlight.Name = "HighlightESP"
+                            highlight.Adornee = player.Character
+                            highlight.FillColor = getTeamColor(player)
+                            highlight.FillTransparency = 0.5
+                            highlight.OutlineTransparency = 0.5
+                            highlight.Parent = player.Character
+                        end
+                    end
+                end
+                wait(1)
+            end
+        end)
+    else
+        print("Highlight ESP Off")
+        -- Remove all Highlight ESP highlights
+        for _, player in ipairs(game.Players:GetPlayers()) do
+            if player.Character then
+                for _, highlight in ipairs(player.Character:GetChildren()) do
+                    if highlight:IsA("Highlight") and highlight.Name == "HighlightESP" then
+                        highlight:Destroy()
+                    end
+                end
+            end
+        end
+    end
+end)
+
+-- Teleports Tab
+local teleportsTab = DrRayLibrary.newTab("Teleports Tab", "ImageIdHere")
+
+teleportsTab.newButton("Teleport to Coal Mine", "Teleports you to the Coal Mine", function()
+    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(804.279296875, 4.021045684814453, -180.43658447265625)
+end)
+
+teleportsTab.newButton("Teleport to Library", "Teleports you to the Library", function()
+    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(1040.576904296875, 4.954561710357666, -161.1494903564453)
+end)
+
+teleportsTab.newButton("Teleport to WorkShop", "Teleports you to the WorkShop", function()
+    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(1088.6669921875, 4.961481094360352, -105.04219055175781)
+end)
+
+teleportsTab.newButton("Teleport to Yard", "Teleports you to the Yard", function()
+    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(934.8656005859375, 1.5258601903915405, -26.265424728393555)
+end)
+
+teleportsTab.newButton("Teleport to Shower Room", "Teleports you to the Shower Room", function()
+    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(964.8069458007812, 4.961152076721191, 155.36184692382812)
+end)
+
+-- Misc Tab
+local miscTab = DrRayLibrary.newTab("Misc Tab", "ImageIdHere")
+
+miscTab.newInput("Teleport to Player", "Enter player name to teleport to.", function(text)
+    if text == "" then
+        print("No input provided.")
+        return
+    end
+
+    print("Entered text: " .. text)
+
+    local closestPlayer = nil
+    local closestDistance = math.huge
+
+    for _, player in ipairs(game.Players:GetPlayers()) do
+        if player.Name:lower():sub(1, #text) == text:lower() then
+            local distance = (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).magnitude
+            if distance < closestDistance then
+                closestDistance = distance
+                closestPlayer = player
+            end
+        end
+    end
+
+    if closestPlayer then
+        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = closestPlayer.Character.HumanoidRootPart.CFrame
+    else
+        print("Player not found.")
+    end
+end)
+
+miscTab.newToggle("Auto Collect PayCheck", "Automatically collects your paycheck", true, function(toggleState)
+    autoCollectPaycheck = toggleState
+    if autoCollectPaycheck then
+        print("Auto Collect PayCheck On")
+        spawn(function()
+            while autoCollectPaycheck do
+                for _,v in pairs(game.Workspace:GetChildren()) do
+                    if v.Name == "PayCheck" then
+                        v.CFrame = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame
+                    end
+                end
+                wait(5) -- Adjust the wait time as needed
+            end
+        end)
+    else
+        print("Auto Collect PayCheck Off")
+    end
+end)
+
+miscTab.newButton("Chat Spy", "Allows you to see the chat and private messages", function() -- This script reveals ALL hidden messages in the default chat -- chat "/spy" to toggle! enabled = true -- if true will check your messages too spyOnMyself = true -- if true will chat the logs publicly (fun, risky) public = false -- if true will use /me to stand out publicItalics = true -- customize private logs privateProperties = { Color = Color3.fromRGB(0, 255, 255), Font = Enum.Font.SourceSansBold, TextSize = 18, } -- //////////////////////////////////////////////////////////////// local StarterGui = game:GetService("StarterGui") local Players = game:GetService("Players") local player = Players.LocalPlayer local saymsg = game:GetService("ReplicatedStorage"):WaitForChild("DefaultChatSystemChatEvents"):WaitForChild("SayMessageRequest") local getmsg = game:GetService("ReplicatedStorage"):WaitForChild("DefaultChatSystemChatEvents"):WaitForChild("OnMessageDoneFiltering") local instance = (_G.chatSpyInstance or 0) + 1 _G.chatSpyInstance = instance local function onChatted(p, msg) if _G.chatSpyInstance == instance then if p == player and msg:lower():sub(1, 4) == "/spy" then enabled = not enabled wait(0.3) privateProperties.Text = "{SPY " .. (enabled and "EN" or "DIS") .. "ABLED}" StarterGui:SetCore("ChatMakeSystemMessage", privateProperties) elseif enabled and (spyOnMyself == true or p ~= player) then msg = msg:gsub("[\n\r]", ''):gsub("\t", ' '):gsub("[ ]+", ' ') local hidden = true local conn = getmsg.OnClientEvent:Connect(function(packet, channel) if packet.SpeakerUserId == p.UserId and packet.Message == msg:sub(#msg - #packet.Message + 1) and (channel == "All" or (channel == "Team" and public == false and Players[packet.FromSpeaker].Team == player.Team)) then hidden = false end end) wait(1) conn:Disconnect() if hidden and enabled then if public then saymsg:FireServer((publicItalics and "/me " or '') .. "{SPY} [" .. p.Name .. "]: " .. msg, "All") else privateProperties.Text = "{SPY} [" .. p.Name .. "]: " .. msg StarterGui:SetCore("ChatMakeSystemMessage", privateProperties) end end end end end for _, p in ipairs(Players:GetPlayers()) do p.Chatted:Connect(function(msg) onChatted(p, msg) end) end Players.PlayerAdded:Connect(function(p) p.Chatted:Connect(function(msg) onChatted(p, msg) end) end) privateProperties.Text = "{SPY " .. (enabled and "EN" or "DIS") .. "ABLED}" StarterGui:SetCore("ChatMakeSystemMessage", privateProperties) local chatFrame = player.PlayerGui.Chat.Frame chatFrame.ChatChannelParentFrame.Visible = true chatFrame.ChatBarParentFrame.Position = chatFrame.ChatChannelParentFrame.Position + UDim2.new(UDim.new(), chatFrame.ChatChannelParentFrame.Size.Y) -- Credit to O Plays on Youtube, go subscribe to him (not my account, just advertising for him, we don't even know each other lol) end)
+
+miscTab.newButton("Join Opposite Team", "Joins the Opposite Team for you", function()
+    local args = {
+        [1] = "Join"
+    }
+
+    game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("CopEvent"):FireServer(unpack(args))
+end)
+
+miscTab.newButton("Escape Prison", "Teleports you out of the prison", function()
+    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(855.4844970703125, 2.1274421215057373, 554.6932983398438) -- Change these coordinates as needed
+end)
+
+local NotificationHolder = loadstring(game:HttpGet("https://raw.githubusercontent.com/BocusLuke/UI/main/STX/Module.Lua"))()
+local Notification = loadstring(game:HttpGet("https://raw.githubusercontent.com/BocusLuke/UI/main/STX/Client.Lua"))()
+
+Notification:Notify(
+    {Title = "IMPORTANT", Description = "If any of the toggles are already green turn it off then turn it on for the feature to work black = off green = on"},
+    {OutlineColor = Color3.fromRGB(80, 80, 80), Time = 8, Type = "option"},
+    {Image = "http://www.roblox.com/asset/?id=6023426923", ImageColor = Color3.fromRGB(255, 84, 84), Callback = function(State) print(tostring(State)) end}
+)
